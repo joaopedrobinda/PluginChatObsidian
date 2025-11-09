@@ -10,6 +10,7 @@ const buildOptions = {
   bundle: true,
   outfile: 'dist/main.js',
   external: ['obsidian', 'electron'],
+  platform: 'node',
   format: 'cjs',
   sourcemap: isProduction ? false : 'inline',
   minify: isProduction,
