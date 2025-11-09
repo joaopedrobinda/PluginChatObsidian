@@ -1,4 +1,3 @@
-// FIX: Replaced namespace import with named imports to resolve base class types correctly.
 import { Plugin, WorkspaceLeaf } from 'obsidian';
 import { ChatView, RAG_CHAT_VIEW_TYPE } from './src/ChatView';
 import { MyPluginSettingTab } from './src/SettingTab';

@@ -23,10 +23,6 @@ const buildOptions = {
           from: ['./manifest.json'],
           to: ['./dist/manifest.json'],
         },
-        {
-          from: ['./styles.css'],
-          to: ['./dist/styles.css'],
-        },
       ],
     }),
   ],

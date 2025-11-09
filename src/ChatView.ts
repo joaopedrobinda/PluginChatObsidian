@@ -1,4 +1,3 @@
-// FIX: Replaced namespace import with named imports to resolve base class types correctly.
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";

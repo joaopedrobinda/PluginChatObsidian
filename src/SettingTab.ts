@@ -1,4 +1,3 @@
-// FIX: Replaced namespace import with named imports to resolve base class types correctly.
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import MyRagChatPlugin from '../main';
 

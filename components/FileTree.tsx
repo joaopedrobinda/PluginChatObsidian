@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { FileTreeNode, FolderNode, FileNode } from '../types';
 
 // Ícones SVG para uma melhor aparência
