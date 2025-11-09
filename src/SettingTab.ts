@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import MyRagChatPlugin from '../main';
 
+// Fix: Add 'extends PluginSettingTab' to inherit from the base Obsidian PluginSettingTab class.
 export class MyPluginSettingTab extends PluginSettingTab {
 	plugin: MyRagChatPlugin;
 

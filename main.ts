@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
   apiKey: ''
 }
 
+// Fix: Add 'extends Plugin' to inherit from the base Obsidian Plugin class.
 export default class MyRagChatPlugin extends Plugin {
   settings: MyPluginSettings;
 

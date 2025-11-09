@@ -9,6 +9,7 @@ interface MyPluginSettings {
   apiKey: string;
 }
 
+// Fix: Add 'extends ItemView' to inherit from the base Obsidian ItemView class.
 export class ChatView extends ItemView {
   private root: Root | null = null;
   private settings: MyPluginSettings;

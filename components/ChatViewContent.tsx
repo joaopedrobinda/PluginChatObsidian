@@ -1,32 +1,27 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { App as ObsidianApp, TFile } from 'obsidian';
 import { ChatMessage, MessageAuthor } from '../types';
 import { getChatResponse } from '../services/geminiService';
 import { getFileContent, findRelevantFiles } from '../services/vaultService';
 import Message from './Message';
-import VaultFileSelector from './VaultFileSelector';
 import Spinner from './Spinner';
+import AttachmentButton from './AttachmentButton';
 
 // --- Ícones ---
-const AtSignIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a4 4 0 0 0-4 4h-4a4 4 0 0 0-4-4V8z"></path><path d="M16 12A4 4 0 0 1 12 16"></path>
-    </svg>
-);
-
 const SendIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path>
     </svg>
 );
 
+const FileIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+);
+
 const CloseIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 );
 // --- Fim dos Ícones ---
-
 
 interface MyPluginSettings {
   apiKey: string;
@@ -40,81 +35,65 @@ interface ChatViewContentProps {
 type ContextMode = 'manual' | 'auto';
 type LoadingState = 'idle' | 'searching' | 'processing' | 'error';
 
-// Componente de pop-up (Modal) para seleção de contexto
-const ContextModal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    obsidianApp: ObsidianApp;
-    contextMode: ContextMode;
-    setContextMode: (mode: ContextMode) => void;
-    onSelectionChange: (paths: string[]) => void;
-}> = ({ isOpen, onClose, obsidianApp, contextMode, setContextMode, onSelectionChange }) => {
-    if (!isOpen) return null;
+// --- Componentes da UI ---
+
+const ApiKeyMessage: React.FC = () => (
+    <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-800">
+        <div className="w-16 h-16 mb-6 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center">
+             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.45 4.9-4.9 1.45 4.9 1.45 1.45 4.9 1.45-4.9 4.9-1.45-4.9-1.45z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+        </div>
+        <h2 className="text-2xl font-bold mb-4 text-gray-100">Bem-vindo ao Chat RAG</h2>
+        <p className="text-gray-400 mb-6 max-w-sm">Para começar a conversar com o assistente e usar suas notas como contexto, adicione sua chave da API do Gemini nas configurações do plugin.</p>
+        <p className="text-gray-400 text-sm">Vá para <code className="bg-gray-900 px-1.5 py-1 rounded-md text-gray-300">Configurações</code> → <code className="bg-gray-900 px-1.5 py-1 rounded-md text-gray-300">Chat RAG com Gemini</code>.</p>
+    </div>
+);
+
+const WelcomeScreen: React.FC<{ onCardClick: (prompt: string) => void }> = ({ onCardClick }) => {
+    const cards = [
+        { title: "Resumir uma nota", description: "Peça um resumo de uma nota longa anexada.", prompt: "Resuma a nota anexada em 3 pontos principais." },
+        { title: "Criar um plano de ação", description: "Use suas notas de projeto para gerar os próximos passos.", prompt: "Com base nas notas do projeto, crie um plano de ação para a próxima semana." },
+        { title: "Explicar um conceito", description: "Anexe uma nota sobre um tópico complexo e peça uma explicação simples.", prompt: "Explique o conceito principal da nota anexada como se eu tivesse 5 anos." },
+        { title: "Brainstorm de ideias", description: "Combine ideias de várias notas para gerar novas perspectivas.", prompt: "Combine as ideias das notas anexadas e sugira 3 novos tópicos para explorar." },
+    ];
 
     return (
-        <div 
-            className="absolute inset-0 bg-gray-900 bg-opacity-75 z-10 flex items-center justify-center"
-            onClick={onClose}
-        >
-            <div 
-                className="bg-gray-800 rounded-lg shadow-xl w-3/4 max-w-2xl h-3/4 flex flex-col"
-                onClick={(e) => e.stopPropagation()} // Impede o fechamento ao clicar dentro
-            >
-                <header className="p-4 border-b border-gray-700 flex justify-between items-center">
-                    <h3 className="font-bold text-lg">Configurar Contexto</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">
-                        <CloseIcon />
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div className="w-16 h-16 mb-6 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.45 4.9-4.9 1.45 4.9 1.45 1.45 4.9 1.45-4.9 4.9-1.45-4.9-1.45z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-200 mb-2">Olá!</h1>
+            <p className="text-lg text-gray-400 mb-10">Como posso te ajudar a conectar as ideias hoje?</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
+                {cards.map((card, i) => (
+                    <button key={i} onClick={() => onCardClick(card.prompt)} className="p-4 bg-gray-700/50 hover:bg-gray-700 rounded-xl text-left transition-colors">
+                        <h3 className="font-semibold text-gray-200">{card.title}</h3>
+                        <p className="text-sm text-gray-400">{card.description}</p>
                     </button>
-                </header>
-                
-                <div className="p-4 border-b border-gray-700">
-                    <h3 className="font-semibold text-sm mb-3">Modo de Contexto</h3>
-                    <div className="flex space-x-2">
-                        <button onClick={() => setContextMode('auto')} className={`flex-1 py-1 text-sm rounded-md transition-colors ${contextMode === 'auto' ? 'bg-purple-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>Automático</button>
-                        <button onClick={() => setContextMode('manual')} className={`flex-1 py-1 text-sm rounded-md transition-colors ${contextMode === 'manual' ? 'bg-purple-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>Manual</button>
-                    </div>
-                </div>
-
-                {contextMode === 'manual' && (
-                    <VaultFileSelector obsidianApp={obsidianApp} onSelectionChange={onSelectionChange} />
-                )}
-                {contextMode === 'auto' && (
-                    <div className="p-4 text-sm text-gray-400 flex-1">
-                        <p className="font-bold text-gray-300 mb-2">Como funciona:</p>
-                        <p>Neste modo, o assistente buscará em todo o seu cofre por notas relevantes para sua pergunta e as usará como contexto automaticamente.</p>
-                    </div>
-                )}
+                ))}
             </div>
         </div>
     );
 };
 
 
-// Componente para a mensagem de falta de API Key
-const ApiKeyMessage: React.FC = () => (
-    <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <h2 className="text-2xl font-bold mb-4 text-purple-400">Bem-vindo ao Assistente Pessoal!</h2>
-        <p className="text-gray-400 mb-6">
-            Para começar, você precisa adicionar sua chave da API do Gemini.
-        </p>
-        <p className="text-gray-400">
-            Vá para <code className="bg-gray-900 p-1 rounded">Configurações</code> &gt; <code className="bg-gray-900 p-1 rounded">Chat RAG com Gemini</code> e insira sua chave.
-        </p>
+const AttachmentChip: React.FC<{ file: TFile, onRemove: (file: TFile) => void }> = ({ file, onRemove }) => (
+    <div className="flex items-center gap-2 bg-gray-600/70 text-gray-200 text-sm pl-2.5 pr-1.5 py-1 rounded-full animate-fade-in">
+        <FileIcon className="flex-shrink-0" />
+        <span className="truncate max-w-40" title={file.path}>{file.basename}</span>
+        <button onClick={() => onRemove(file)} className="p-1 rounded-full hover:bg-gray-500/50 transition-colors">
+            <CloseIcon />
+        </button>
     </div>
 );
 
 
 // --- Componente Principal do Chat ---
 const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { author: MessageAuthor.SYSTEM, text: "Faça uma pergunta ou clique no ícone '@' para configurar o contexto." }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState<string>('');
   const [loadingState, setLoadingState] = useState<LoadingState>('idle');
-  const [selectedFilePaths, setSelectedFilePaths] = useState<string[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<TFile[]>([]);
   const [contextMode, setContextMode] = useState<ContextMode>('auto');
-  const [lastUsedFiles, setLastUsedFiles] = useState<TFile[]>([]);
-  const [isContextModalOpen, setIsContextModalOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -125,24 +104,55 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
 
   useEffect(scrollToBottom, [messages]);
 
-  // Ajusta a altura do textarea dinamicamente
+  // Ajusta a altura do textarea
   useEffect(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
-      textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
+      const scrollHeight = textAreaRef.current.scrollHeight;
+      textAreaRef.current.style.height = `${scrollHeight}px`;
     }
   }, [userInput]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleWelcomeCardClick = (prompt: string) => {
+    setUserInput(prompt);
+    textAreaRef.current?.focus();
+  }
+
+  const handleAddAttachments = useCallback((files: TFile[]) => {
+    setAttachedFiles(prev => {
+        const newFiles = files.filter(f => !prev.some(pf => pf.path === f.path));
+        return [...prev, ...newFiles];
+    });
+    setContextMode('manual'); // Selecting files forces manual mode
+  }, []);
+
+  const handleRemoveAttachment = (fileToRemove: TFile) => {
+    setAttachedFiles(prev => prev.filter(f => f.path !== fileToRemove.path));
+  }
+  
+  const handleContextModeChange = (mode: ContextMode) => {
+      if (mode === 'auto') {
+          setAttachedFiles([]); // Clear attachments when switching to auto
+      }
+      setContextMode(mode);
+  }
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!userInput.trim() || loadingState !== 'idle') return;
 
     const userMessage: ChatMessage = { author: MessageAuthor.USER, text: userInput };
-    setMessages(prev => [...prev, userMessage]);
     const currentInput = userInput;
+    const currentAttachments = [...attachedFiles];
+    
+    setMessages(prev => [...prev, userMessage]);
     setUserInput('');
     setLoadingState('searching');
-    setLastUsedFiles([]);
+    
+    // Clear attachments after sending if in manual mode
+    if (contextMode === 'manual') {
+        setAttachedFiles([]);
+    }
 
     try {
         let combinedContext = '';
@@ -153,17 +163,20 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
             if (relevantFiles.length > 0) {
                 filesUsed = relevantFiles.map(f => f.file);
                 combinedContext = relevantFiles.map(f => `## Nota: ${f.file.basename}\n\n${f.content}`).join('\n\n---\n\n');
-                setLastUsedFiles(filesUsed);
+                 setMessages(prev => [...prev, { author: MessageAuthor.SYSTEM, text: `Usando ${filesUsed.length} nota(s) relevante(s) como contexto.` }]);
             } else {
                  setMessages(prev => [...prev, { author: MessageAuthor.SYSTEM, text: "Nenhuma nota relevante encontrada. Respondendo com conhecimento geral." }]);
             }
         } else { // Manual Mode
-            if (selectedFilePaths.length > 0) {
-                const contextPromises = selectedFilePaths.map(path => getFileContent(obsidianApp, path));
+            if (currentAttachments.length > 0) {
+                const contextPromises = currentAttachments.map(file => getFileContent(obsidianApp, file.path));
                 const contextContents = await Promise.all(contextPromises);
                 combinedContext = contextContents.join('\n\n---\n\n');
+                filesUsed = currentAttachments;
                 if (!combinedContext.trim()) {
                     setMessages(prev => [...prev, { author: MessageAuthor.SYSTEM, text: "As notas selecionadas estão vazias." }]);
+                } else {
+                    setMessages(prev => [...prev, { author: MessageAuthor.SYSTEM, text: `Usando ${filesUsed.length} nota(s) selecionada(s) como contexto.` }]);
                 }
             } else {
                 setMessages(prev => [...prev, { author: MessageAuthor.SYSTEM, text: "Modo manual ativado, mas nenhuma nota foi selecionada. Respondendo com conhecimento geral." }]);
@@ -172,6 +185,7 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
       
       setLoadingState('processing');
 
+      // Build history, excluding system messages
       const chatHistory = messages
           .filter(m => m.author === MessageAuthor.USER || m.author === MessageAuthor.MODEL)
           .map(m => ({
@@ -186,7 +200,7 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
     } catch (error) {
       console.error(error);
       setLoadingState('error');
-      const errorMessage: ChatMessage = { author: MessageAuthor.SYSTEM, text: "Ocorreu um erro ao processar sua solicitação." };
+      const errorMessage: ChatMessage = { author: MessageAuthor.SYSTEM, text: "Ocorreu um erro ao processar sua solicitação. Verifique o console." };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoadingState('idle');
@@ -196,7 +210,7 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        handleSendMessage(e as any);
+        handleSendMessage();
     }
   };
 
@@ -204,93 +218,67 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
       return <ApiKeyMessage />;
   }
 
-  const getContextLabel = () => {
-      if (contextMode === 'auto') {
-          return "Contexto: Automático";
-      }
-      if (selectedFilePaths.length === 0) {
-          return "Contexto: Manual (0 arquivos)";
-      }
-      const fileText = selectedFilePaths.length === 1 ? "arquivo" : "arquivos";
-      return `Contexto: ${selectedFilePaths.length} ${fileText}`;
-  }
-
   return (
-    <div className="flex flex-col h-full bg-gray-800 text-gray-200 font-sans overflow-hidden relative">
-        {/* Header */}
-        <header className="p-4 border-b border-gray-700 flex justify-center items-center relative">
-            <h2 className="text-xl font-bold text-purple-400">Assistente Pessoal</h2>
-        </header>
+    <div className="flex flex-col h-full bg-gray-800 text-gray-200 font-sans overflow-hidden" style={{ background: 'radial-gradient(circle at top, #2d3748, #1a202c)' }}>
         
-        {/* Lista de Mensagens */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((msg, index) => (
-                <React.Fragment key={index}>
-                    <Message message={msg} />
-                    {msg.author === MessageAuthor.MODEL && lastUsedFiles.length > 0 && (
-                         <div className="flex justify-start text-xs text-gray-400 pl-2">
-                            <span className="mr-2 font-semibold">Contexto usado:</span>
-                            <div className="flex flex-wrap gap-2">
-                                {lastUsedFiles.map(file => (
-                                    <span key={file.path} className="bg-gray-700 px-2 py-0.5 rounded-md">{file.basename}</span>
-                                ))}
-                            </div>
-                         </div>
-                    )}
-                </React.Fragment>
-            ))}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {messages.length === 0 ? (
+                <WelcomeScreen onCardClick={handleWelcomeCardClick} />
+            ) : (
+                messages.map((msg, index) => <Message key={index} message={msg} />)
+            )}
             <div ref={messagesEndRef} />
         </div>
         
-        {/* Área de Input (Formulário) */}
-        <div className="p-4 border-t border-gray-700">
-            {/* Indicador de Contexto */}
-            <div className="flex items-center text-xs text-gray-400 mb-2">
-                <button 
-                    onClick={() => setIsContextModalOpen(true)}
-                    className="p-1 mr-2 bg-gray-700 hover:bg-gray-600 rounded-md"
-                    title="Configurar Contexto"
-                >
-                    <AtSignIcon className="w-4 h-4" />
-                </button>
-                <span>{getContextLabel()}</span>
-            </div>
-
-            {/* Caixa de Texto Estilo Gemini */}
-            <form onSubmit={handleSendMessage} className="bg-gray-700 rounded-xl p-2 flex items-start space-x-2">
+        <div className="p-4 w-full max-w-4xl mx-auto flex flex-col gap-2">
+            {/* Attachment Chips */}
+            {attachedFiles.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                    {attachedFiles.map(file => (
+                        <AttachmentChip key={file.path} file={file} onRemove={handleRemoveAttachment} />
+                    ))}
+                </div>
+            )}
+            
+            {/* Input Form */}
+            <div className="bg-gray-700/50 border border-gray-600/80 rounded-2xl p-2 flex items-start space-x-2 relative">
+                 {loadingState !== 'idle' && (
+                    <div className="absolute inset-0 bg-gray-800/50 rounded-2xl flex items-center justify-center z-10">
+                         <div className="flex items-center gap-2 text-sm text-gray-300">
+                             <Spinner/>
+                             <span>{loadingState === 'searching' ? 'Buscando contexto...' : 'Processando...'}</span>
+                         </div>
+                    </div>
+                 )}
+                <AttachmentButton 
+                    obsidianApp={obsidianApp}
+                    onFilesSelected={handleAddAttachments}
+                    contextMode={contextMode}
+                    onContextModeChange={handleContextModeChange}
+                />
                 <textarea
                     ref={textAreaRef}
                     rows={1}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={
-                        loadingState === 'searching' ? 'Buscando...' :
-                        loadingState === 'processing' ? 'Processando...' :
-                        'Pergunte algo...'
-                    }
-                    className="flex-1 bg-transparent px-2 py-3 focus:outline-none resize-none max-h-40"
+                    placeholder={'Pergunte algo...'}
+                    className="flex-1 bg-transparent px-2 py-2.5 focus:outline-none resize-none max-h-48 text-base"
                     disabled={loadingState !== 'idle'}
                 />
                 <button
-                    type="submit"
+                    type="button"
+                    onClick={handleSendMessage}
                     disabled={loadingState !== 'idle' || !userInput.trim()}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-900 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold p-3 rounded-lg transition-colors flex items-center justify-center self-end"
+                    className="bg-gray-600 hover:bg-purple-600 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white p-2.5 rounded-lg transition-colors flex items-center justify-center self-end"
                 >
-                    {loadingState !== 'idle' ? <Spinner /> : <SendIcon className="w-5 h-5" />}
+                    <SendIcon />
                 </button>
-            </form>
+            </div>
+            <p className="text-xs text-center text-gray-500 mt-2">
+                Modo de Contexto: <span className="font-semibold text-gray-400">{contextMode === 'auto' ? 'Automático' : 'Manual'}</span>.
+            </p>
         </div>
-
-        {/* Modal de Contexto */}
-        <ContextModal 
-            isOpen={isContextModalOpen}
-            onClose={() => setIsContextModalOpen(false)}
-            obsidianApp={obsidianApp}
-            contextMode={contextMode}
-            setContextMode={setContextMode}
-            onSelectionChange={setSelectedFilePaths}
-        />
     </div>
   );
 };
