@@ -1,33 +1,31 @@
 import React from 'react';
-import ChatModalContent from './components/ChatModalContent';
+import ChatViewContent from './components/ChatViewContent';
 import type { App as ObsidianApp } from 'obsidian';
 
-// Mock da aplicação Obsidian para desenvolvimento/teste standalone, se necessário.
-// Isso fornece um objeto com a estrutura esperada pelos componentes.
+// Mock da aplicação Obsidian para desenvolvimento/teste standalone.
 const mockObsidianApp = {
   vault: {
-    getMarkdownFiles: () => [],
-    getAbstractFileByPath: () => null,
-    cachedRead: () => Promise.resolve(''),
+    getMarkdownFiles: () => [
+        { basename: 'Nota de Teste 1', path: 'teste1.md' },
+        { basename: 'Outra Nota Legal', path: 'outra.md' },
+        { basename: 'Receita de Bolo', path: 'receitas/bolo.md' }
+    ],
+    cachedRead: (file: any) => Promise.resolve(`# Conteúdo de ${file.basename}`),
   },
-  workspace: {
-      getActiveViewOfType: () => null,
-  }
 } as unknown as ObsidianApp;
+
+// Mock das configurações do plugin
+const mockSettings = {
+    apiKey: 'YOUR_API_KEY_HERE' // Coloque uma chave real aqui para testar a API no dev standalone
+}
 
 
 const App: React.FC = () => {
   return (
     <div className="app-container" style={{ height: '100vh', backgroundColor: '#1a202c' }}>
-      {/* 
-        Este componente foi projetado para estar em um modal dentro do Obsidian,
-        mas podemos renderizá-lo aqui para desenvolvimento visual.
-      */}
-      <ChatModalContent
+      <ChatViewContent
         obsidianApp={mockObsidianApp}
-        initialContext="Este é um contexto inicial para fins de teste."
-        onClose={() => console.log('Fechamento do modal solicitado.')}
-        onInsert={(text) => console.log('Inserção de texto solicitada:', text)}
+        settings={mockSettings}
       />
     </div>
   );

@@ -1,13 +1,11 @@
-
 import React, { useState } from 'react';
 import { ChatMessage, MessageAuthor } from '../types';
 
 interface MessageProps {
   message: ChatMessage;
-  onInsert?: () => void;
 }
 
-const Message: React.FC<MessageProps> = ({ message, onInsert }) => {
+const Message: React.FC<MessageProps> = ({ message }) => {
   const { author, text } = message;
   const [copied, setCopied] = useState(false);
 
@@ -61,11 +59,6 @@ const Message: React.FC<MessageProps> = ({ message, onInsert }) => {
             <button onClick={handleCopy} className="text-xs text-gray-400 hover:text-white px-2 py-1 bg-gray-600 rounded">
               {copied ? 'Copiado!' : 'Copiar'}
             </button>
-            {onInsert && (
-              <button onClick={onInsert} className="text-xs text-gray-400 hover:text-white px-2 py-1 bg-gray-600 rounded">
-                Inserir na Nota
-              </button>
-            )}
           </div>
         )}
       </div>
