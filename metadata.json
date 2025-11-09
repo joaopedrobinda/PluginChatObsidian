@@ -1,0 +1,5 @@
+{
+  "name": "Chat Obsidian",
+  "description": "Uma interface de chat projetada para ser integrada a um plugin do Obsidian, permitindo conversas com uma LLM enriquecidas por notas locais (RAG).",
+  "requestFramePermissions": []
+}
