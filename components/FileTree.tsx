@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FileTreeNode, FolderNode, FileNode } from '../types';
 
-// Ícones SVG para uma melhor aparência
+// --- Ícones (copiados para evitar import) ---
 const FolderIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
@@ -25,7 +25,7 @@ interface FileTreeProps {
   node: FileTreeNode;
   filter: string;
   selectedPaths: Set<string>;
-  onToggleSelection: (filePath: string) => void;
+  onToggleSelection: (filePath: string, nodeType: 'file' | 'folder') => void;
   level?: number;
 }
 
@@ -39,6 +39,30 @@ const doesNodeMatchFilter = (node: FileTreeNode, filter: string): boolean => {
     }
     return false;
 };
+
+// @ts-ignore - Esta função é usada em getFolderSelectionState
+function getAllFilePathsFromNode(node: FileTreeNode): string[] {
+  if (node.type === 'file') return [node.path];
+  if (node.type === 'folder') return node.children.flatMap(getAllFilePathsFromNode);
+  return [];
+}
+
+
+// Função auxiliar para verificar o estado de seleção de uma pasta
+const getFolderSelectionState = (folderNode: FolderNode, selectedPaths: Set<string>): 'all' | 'partial' | 'none' => {
+    const allChildPaths = folderNode.children.flatMap(child => 
+        child.type === 'file' ? [child.path] : getAllFilePathsFromNode(child)
+    );
+
+    if (allChildPaths.length === 0) return 'none'; // Pasta vazia
+
+    const selectedCount = allChildPaths.reduce((count, path) => count + (selectedPaths.has(path) ? 1 : 0), 0);
+    
+    if (selectedCount === 0) return 'none';
+    if (selectedCount === allChildPaths.length) return 'all';
+    return 'partial';
+};
+
 
 export const FileTree: React.FC<FileTreeProps> = ({ node, filter, selectedPaths, onToggleSelection, level = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(level < 2); // Auto-expande os primeiros níveis
@@ -55,7 +79,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ node, filter, selectedPaths,
               type="checkbox"
               className="form-checkbox h-4 w-4 bg-gray-600 border-gray-500 rounded text-purple-500 focus:ring-purple-500 flex-shrink-0"
               checked={selectedPaths.has(node.path)}
-              onChange={() => onToggleSelection(node.path)}
+              onChange={() => onToggleSelection(node.path, 'file')}
             />
             <FileIcon className="text-gray-400 flex-shrink-0"/>
             <span className="truncate" title={node.path}>{node.name}</span>
@@ -65,24 +89,33 @@ export const FileTree: React.FC<FileTreeProps> = ({ node, filter, selectedPaths,
   }
 
   if (node.type === 'folder') {
-    // Não renderizar o diretório raiz (/)
     const isRoot = node.path === '/';
+    const selectionState = getFolderSelectionState(node, selectedPaths);
 
     return (
       <div>
         {!isRoot && (
             <div 
                 style={{ paddingLeft: `${level * 16}px` }} 
-                className="flex items-center space-x-2 p-1 rounded-md hover:bg-gray-700/50 transition-colors cursor-pointer"
-                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center space-x-2 p-1 rounded-md hover:bg-gray-700/50 transition-colors"
             >
-                <ChevronRightIcon className={`transform transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
-                <FolderIcon className="text-yellow-500/80 flex-shrink-0" />
-                <span className="font-semibold truncate">{node.name}</span>
+                <input
+                    type="checkbox"
+                    className="form-checkbox h-4 w-4 bg-gray-600 border-gray-500 rounded text-purple-500 focus:ring-purple-500 flex-shrink-0"
+                    checked={selectionState === 'all'}
+                    // @ts-ignore - Permite o estado "indeterminate" via JS
+                    ref={el => el && (el.indeterminate = selectionState === 'partial')}
+                    onChange={() => onToggleSelection(node.path, 'folder')}
+                />
+                <div className="flex items-center space-x-1 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+                    <ChevronRightIcon className={`transform transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                    <FolderIcon className="text-yellow-500/80 flex-shrink-0" />
+                    <span className="font-semibold truncate">{node.name}</span>
+                </div>
             </div>
         )}
         {(isExpanded || isRoot) && (
-          <div className={`${!isRoot ? 'ml-4 border-l border-gray-700' : ''}`}>
+          <div className={`${!isRoot ? 'ml-4' : ''}`}>
             {node.children.map(child => (
               <FileTree 
                 key={child.path} 

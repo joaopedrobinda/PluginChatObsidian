@@ -72,7 +72,8 @@ export const findRelevantFiles = async (
   topN: number = 3
 ): Promise<{ file: TFile; content: string }[]> => {
   const allFiles = app.vault.getMarkdownFiles();
-  const queryWords = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const lowerQuery = query.toLowerCase();
+  const queryWords = lowerQuery.split(/\s+/).filter(Boolean);
 
   if (queryWords.length === 0) {
     return [];
@@ -82,21 +83,37 @@ export const findRelevantFiles = async (
     allFiles.map(async (file) => {
       const content = await app.vault.cachedRead(file);
       const lowerContent = content.toLowerCase();
+      const lowerBasename = file.basename.toLowerCase();
       let score = 0;
 
-      // Pontua com base na presença de palavras-chave
+      // 1. Bônus por correspondência exata no nome do arquivo
+      if (lowerBasename.includes(lowerQuery)) {
+        score += 10;
+      }
+      
+      // 2. Bônus por palavras-chave no nome do arquivo
+      for (const word of queryWords) {
+        if (lowerBasename.includes(word)) {
+          score += 5;
+        }
+      }
+
+      // 3. Bônus por correspondência exata da frase no conteúdo
+      if (lowerContent.includes(lowerQuery)) {
+          score += 5;
+      }
+
+      // 4. Pontuação por palavras-chave no conteúdo
       for (const word of queryWords) {
         if (lowerContent.includes(word)) {
-          score++;
+          score += 1;
         }
       }
       
-      // Bônus se a palavra-chave estiver no nome do arquivo
-      const lowerBasename = file.basename.toLowerCase();
-       for (const word of queryWords) {
-        if (lowerBasename.includes(word)) {
-          score += 2; 
-        }
+      // 5. Bônus de "Recência" (arquivos modificados recentemente são mais relevantes)
+      const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      if (file.stat.mtime > oneWeekAgo) {
+          score += 2;
       }
 
       return { file, content, score };
@@ -107,6 +124,9 @@ export const findRelevantFiles = async (
   const sortedFiles = fileScores
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score);
+
+  // Log para depuração
+  console.log("Arquivos Relevantes Encontrados:", sortedFiles.slice(0, topN).map(f => ({ path: f.file.path, score: f.score })));
 
   // Retorna os top N arquivos
   return sortedFiles.slice(0, topN).map(item => ({ file: item.file, content: item.content }));
