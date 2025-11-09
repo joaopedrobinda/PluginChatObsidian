@@ -1,44 +1,44 @@
-import { App, Plugin, PluginManifest } from 'obsidian';
-import { ChatView, CHAT_VIEW_TYPE } from './src/ChatView';
+import * as obsidian from 'obsidian';
+import { ChatModal } from './src/ChatModal';
 
-export default class MyRagChatPlugin extends Plugin {
+export default class MyRagChatPlugin extends obsidian.Plugin {
 
-  // FIX: Adicionado construtor explícito para garantir a inicialização correta
-  // e ajudar o TypeScript a resolver as propriedades e métodos herdados da classe Plugin.
-  constructor(app: App, manifest: PluginManifest) {
+  constructor(app: obsidian.App, manifest: obsidian.PluginManifest) {
     super(app, manifest);
   }
 
   async onload() {
-    console.log('Carregando o plugin de Chat RAG...');
+    console.log('Carregando o plugin de Chat RAG v2 (Estilo Copilot)...');
 
-    this.registerView(
-      CHAT_VIEW_TYPE,
-      (leaf) => new ChatView(leaf, this.app)
-    );
-
+    // Adiciona um comando na paleta de comandos para abrir o modal
+    this.addCommand({
+      id: 'open-rag-chat-modal',
+      name: 'Abrir Chat com a nota atual',
+      editorCallback: (editor: obsidian.Editor, view: obsidian.MarkdownView) => {
+        const fileContent = editor.getDoc().getValue();
+        new ChatModal(this.app, fileContent, (response) => {
+          editor.replaceSelection(response);
+        }).open();
+      },
+    });
+    
+    // Adiciona um ícone na faixa lateral (ribbon) que também abre o modal
     this.addRibbonIcon('messages-square', 'Abrir Chat com IA', () => {
-      this.activateView();
+        const activeView = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
+        if (activeView) {
+            const editor = activeView.editor;
+            const fileContent = editor.getDoc().getValue();
+            new ChatModal(this.app, fileContent, (response) => {
+              editor.replaceSelection(response);
+            }).open();
+        } else {
+            // Se não houver uma nota ativa, abre com contexto vazio
+            new ChatModal(this.app, "", null).open();
+        }
     });
   }
 
   onunload() {
     console.log('Descarregando o plugin de Chat RAG.');
-  }
-
-  async activateView() {
-    // Remove qualquer aba do nosso tipo que já esteja aberta para não duplicar
-    this.app.workspace.detachLeavesOfType(CHAT_VIEW_TYPE);
-
-    // Abre a nossa view em uma nova aba
-    await this.app.workspace.getLeaf(false).setViewState({
-      type: CHAT_VIEW_TYPE,
-      active: true,
-    });
-
-    // Coloca o foco na nossa view
-    this.app.workspace.revealLeaf(
-      this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)[0]
-    );
   }
 }

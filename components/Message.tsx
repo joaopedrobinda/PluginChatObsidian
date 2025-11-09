@@ -1,13 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ChatMessage, MessageAuthor } from '../types';
 
 interface MessageProps {
   message: ChatMessage;
+  onInsert?: () => void;
 }
 
-const Message: React.FC<MessageProps> = ({ message }) => {
+const Message: React.FC<MessageProps> = ({ message, onInsert }) => {
   const { author, text } = message;
+  const [copied, setCopied] = useState(false);
 
   const baseClasses = 'max-w-xl p-3 rounded-lg';
   
@@ -17,6 +19,12 @@ const Message: React.FC<MessageProps> = ({ message }) => {
           case MessageAuthor.MODEL: return 'Gemini';
           case MessageAuthor.SYSTEM: return 'Sistema';
       }
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   const getContainerClasses = () => {
@@ -43,11 +51,23 @@ const Message: React.FC<MessageProps> = ({ message }) => {
 
   return (
     <div className={getContainerClasses()}>
-      <div className="flex flex-col">
+      <div className="flex flex-col w-full">
         { author !== MessageAuthor.SYSTEM && <span className={`text-xs text-gray-400 mb-1 ${author === MessageAuthor.USER ? 'text-right' : 'text-left'}`}>{getAuthorName()}</span> }
         <div className={getMessageClasses()}>
           <p className="whitespace-pre-wrap">{text}</p>
         </div>
+        {author === MessageAuthor.MODEL && (
+          <div className={`flex items-center mt-2 space-x-2 ${getContainerClasses().includes('end') ? 'justify-end' : 'justify-start'}`}>
+            <button onClick={handleCopy} className="text-xs text-gray-400 hover:text-white px-2 py-1 bg-gray-600 rounded">
+              {copied ? 'Copiado!' : 'Copiar'}
+            </button>
+            {onInsert && (
+              <button onClick={onInsert} className="text-xs text-gray-400 hover:text-white px-2 py-1 bg-gray-600 rounded">
+                Inserir na Nota
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

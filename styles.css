@@ -1,25 +1,7 @@
-/*
-  styles.css
-  ------------
-  AVISO IMPORTANTE SOBRE ESTILIZAÇÃO
-  
-  A interface do seu plugin (os arquivos .tsx) foi criada com Tailwind CSS, 
-  que usa classes de utilidade como 'bg-gray-900', 'p-4', 'flex', etc.
 
-  Essas classes NÃO funcionam automaticamente dentro do Obsidian. Elas precisam ser
-  convertidas em CSS padrão, que é o que este arquivo `styles.css` faz. O protótipo
-  no navegador funciona porque o arquivo `index.html` carrega o Tailwind de uma
-  fonte externa (CDN), o que não acontece no ambiente do plugin.
-
-  Para que a aparência do seu plugin no Obsidian seja idêntica à do protótipo,
-  você precisa configurar um "processo de build" no seu projeto. Ferramentas
-  como esbuild, Vite ou Webpack podem ser configuradas com PostCSS e Tailwind para:
-  
-  1. Ler todos os seus arquivos .tsx.
-  2. Encontrar todas as classes do Tailwind que você usou.
-  3. Gerar automaticamente o conteúdo deste arquivo `styles.css`.
-
-  Este arquivo está atualmente VAZIO porque a estilização está sendo feita
-  pelo Tailwind no protótipo. Adicione aqui seus estilos CSS personalizados
-  ou, idealmente, configure o processo de build para gerar este arquivo para você.
-*/
+/* Estilos para o Modal flutuante */
+.rag-chat-modal .modal-content {
+  padding: 0;
+  background-color: transparent;
+  box-shadow: none;
+}

@@ -2,30 +2,32 @@
 import React, { useState, useEffect } from 'react';
 import { getVaultFiles } from '../services/vaultService';
 import { VaultFile } from '../types';
+import type { App as ObsidianApp } from 'obsidian';
 
 interface VaultFileSelectorProps {
   onSelectionChange: (selectedIds: string[]) => void;
+  obsidianApp: ObsidianApp;
 }
 
-const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange }) => {
+const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange, obsidianApp }) => {
   const [files, setFiles] = useState<VaultFile[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isOpen, setIsOpen] = useState<boolean>(true);
+  const [isOpen, setIsOpen] = useState<boolean>(false); // Começa fechado por padrão
 
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const vaultFiles = await getVaultFiles();
+        const vaultFiles = await getVaultFiles(obsidianApp);
         setFiles(vaultFiles);
       } catch (error) {
-        console.error("Erro ao buscar arquivos do cofre (simulado):", error);
+        console.error("Erro ao buscar arquivos do cofre:", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchFiles();
-  }, []);
+  }, [obsidianApp]);
 
   const handleToggleSelection = (fileId: string) => {
     const newSelection = new Set(selectedIds);
@@ -41,7 +43,7 @@ const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange
   return (
     <div className="p-4 border-b border-gray-700 bg-gray-800/50">
       <button onClick={() => setIsOpen(!isOpen)} className="w-full text-left font-bold text-lg mb-2 flex justify-between items-center">
-        <span>Contexto (Notas do Cofre)</span>
+        <span>Adicionar mais notas ao contexto</span>
         <span className={`transform transition-transform ${isOpen ? 'rotate-180' : 'rotate-0'}`}>▼</span>
       </button>
       {isOpen && (
@@ -49,7 +51,7 @@ const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange
           {isLoading ? (
             <p>Carregando notas do cofre...</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {files.map(file => (
                 <label key={file.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 cursor-pointer transition-colors">
                   <input
@@ -58,7 +60,7 @@ const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange
                     checked={selectedIds.has(file.id)}
                     onChange={() => handleToggleSelection(file.id)}
                   />
-                  <span title={`${file.path}${file.name}`}>{file.name}</span>
+                  <span className="truncate" title={file.path}>{file.name}</span>
                 </label>
               ))}
             </div>
