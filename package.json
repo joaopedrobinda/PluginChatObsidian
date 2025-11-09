@@ -1,23 +1,33 @@
 {
-  "name": "chat-obsidian",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "obsidian-gemini-rag-chat",
+  "version": "1.0.0",
+  "description": "Um assistente de chat com IA (Gemini) que usa suas notas do Obsidian como contexto (RAG).",
+  "main": "main.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "node build.js --watch",
+    "build": "node build.js"
+  },
+  "keywords": [
+    "obsidian-md",
+    "plugin",
+    "ai",
+    "gemini",
+    "rag"
+  ],
+  "author": "Seu Nome",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^16.11.6",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "esbuild": "0.19.11",
+    "esbuild-plugin-copy": "^2.1.1",
+    "obsidian": "latest",
+    "typescript": "5.2.2"
   },
   "dependencies": {
-    "react": "^19.2.0",
     "@google/genai": "^1.29.0",
-    "react-dom": "^19.2.0",
-    "obsidian": "^1.10.2-1"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }

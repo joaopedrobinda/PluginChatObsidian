@@ -3,6 +3,12 @@ import { ChatView, CHAT_VIEW_TYPE } from './src/ChatView';
 
 export default class MyRagChatPlugin extends Plugin {
 
+  // FIX: Adicionado construtor explícito para garantir a inicialização correta
+  // e ajudar o TypeScript a resolver as propriedades e métodos herdados da classe Plugin.
+  constructor(app: App, manifest: PluginManifest) {
+    super(app, manifest);
+  }
+
   async onload() {
     console.log('Carregando o plugin de Chat RAG...');
 

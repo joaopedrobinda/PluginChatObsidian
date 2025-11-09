@@ -6,6 +6,9 @@ import AppComponent from "../App";
 export const CHAT_VIEW_TYPE = "rag-chat-view";
 
 export class ChatView extends ItemView {
+  // FIX: Declarado explicitamente a propriedade 'contentEl' para resolver um problema de
+  // tipo onde o compilador não a reconhecia, apesar de ser herdada de ItemView.
+  contentEl: HTMLElement;
   private root: Root | null = null;
 
   constructor(leaf: WorkspaceLeaf, private obsidianApp: ObsidianApp) {
