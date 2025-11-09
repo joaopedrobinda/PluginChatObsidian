@@ -1,8 +1,14 @@
 
 import React from 'react';
 import ChatInterface from './components/ChatInterface';
+import type { App as ObsidianApp } from 'obsidian';
 
-function App() {
+interface AppProps {
+  // Tornamos a prop opcional para que o app continue funcionando em modo de protótipo
+  obsidianApp?: ObsidianApp;
+}
+
+function App({ obsidianApp }: AppProps) {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans flex flex-col items-center p-4">
       <div className="w-full max-w-4xl mx-auto">
@@ -12,7 +18,8 @@ function App() {
         </header>
 
         <main className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl shadow-purple-900/20 flex flex-col h-[80vh]">
-          <ChatInterface />
+          {/* Passamos a prop para o componente de chat */}
+          <ChatInterface obsidianApp={obsidianApp} />
         </main>
 
         <footer className="mt-6 text-center text-gray-500 text-sm p-4 bg-gray-800 border border-gray-700 rounded-lg">

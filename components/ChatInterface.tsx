@@ -6,8 +6,13 @@ import { getFileContent } from '../services/vaultService';
 import Message from './Message';
 import VaultFileSelector from './VaultFileSelector';
 import Spinner from './Spinner';
+import type { App as ObsidianApp } from 'obsidian';
 
-const ChatInterface: React.FC = () => {
+interface ChatInterfaceProps {
+  obsidianApp?: ObsidianApp;
+}
+
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ obsidianApp }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { author: MessageAuthor.SYSTEM, text: "Olá! Sou seu assistente de produtividade. Selecione algumas notas abaixo para me dar contexto e faça uma pergunta." }
   ]);
@@ -33,6 +38,8 @@ const ChatInterface: React.FC = () => {
 
     try {
       // RAG: Buscar conteúdo dos arquivos selecionados
+      // NO FUTURO: Aqui você passaria o obsidianApp para getFileContent
+      // ex: const contextPromises = selectedFileIds.map(id => getFileContent(obsidianApp, id));
       const contextPromises = selectedFileIds.map(id => getFileContent(id));
       const contextContents = await Promise.all(contextPromises);
       const context = contextContents.join('\n\n---\n\n');
@@ -56,6 +63,7 @@ const ChatInterface: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* NO FUTURO: Aqui você passaria o obsidianApp para VaultFileSelector */}
       <VaultFileSelector onSelectionChange={setSelectedFileIds} />
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, index) => (
