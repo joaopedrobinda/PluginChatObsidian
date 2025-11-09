@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { ChatMessage, MessageAuthor } from '../types';
 
 interface MessageProps {
@@ -41,7 +42,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
       case MessageAuthor.USER:
         return `${baseClasses} bg-purple-600 text-white`;
       case MessageAuthor.MODEL:
-        return `${baseClasses} bg-gray-700 text-gray-200`;
+        return `${baseClasses} bg-gray-700 text-gray-200 prose prose-invert prose-sm max-w-xl`;
       case MessageAuthor.SYSTEM:
         return `${baseClasses} bg-gray-600 text-gray-300 text-sm italic w-full text-center`;
     }
@@ -52,7 +53,11 @@ const Message: React.FC<MessageProps> = ({ message }) => {
       <div className="flex flex-col w-full">
         { author !== MessageAuthor.SYSTEM && <span className={`text-xs text-gray-400 mb-1 ${author === MessageAuthor.USER ? 'text-right' : 'text-left'}`}>{getAuthorName()}</span> }
         <div className={getMessageClasses()}>
-          <p className="whitespace-pre-wrap">{text}</p>
+          {author === MessageAuthor.MODEL ? (
+            <ReactMarkdown>{text}</ReactMarkdown>
+          ) : (
+            <p className="whitespace-pre-wrap">{text}</p>
+          )}
         </div>
         {author === MessageAuthor.MODEL && (
           <div className={`flex items-center mt-2 space-x-2 ${getContainerClasses().includes('end') ? 'justify-end' : 'justify-start'}`}>

@@ -1,8 +1,6 @@
-
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getVaultFileTree } from '../services/vaultService';
-import { FileTreeNode, FolderNode, FileNode } from '../types';
+import { FolderNode } from '../types';
 import type { App as ObsidianApp } from 'obsidian';
 import { FileTree } from './FileTree';
 
@@ -39,9 +37,24 @@ const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange
     onSelectionChange(Array.from(newSelection));
   };
 
+  const handleClearSelection = () => {
+    setSelectedPaths(new Set());
+    onSelectionChange([]);
+  };
+
   return (
     <div className="p-4 bg-gray-800/50 flex flex-col h-full text-gray-300">
-      <p className="text-xs text-gray-400 mb-3">Selecionadas: {selectedPaths.size}</p>
+      <div className="flex justify-between items-center mb-3">
+          <p className="text-xs text-gray-400">Selecionadas: {selectedPaths.size}</p>
+          {selectedPaths.size > 0 && (
+              <button 
+                  onClick={handleClearSelection}
+                  className="text-xs text-purple-400 hover:text-purple-300"
+              >
+                  Limpar
+              </button>
+          )}
+      </div>
       <input
         type="text"
         placeholder="Filtrar notas..."

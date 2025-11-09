@@ -1,6 +1,17 @@
 import { GoogleGenAI, Chat } from "@google/genai";
 
-export const getChatResponse = async (userMessage: string, context: string, apiKey: string): Promise<string> => {
+// Tipagem para o histórico de conversa
+interface ChatHistoryPart {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+}
+
+export const getChatResponse = async (
+  userMessage: string,
+  context: string,
+  apiKey: string,
+  history: ChatHistoryPart[]
+): Promise<string> => {
   if (!apiKey) {
     return "A chave da API do Gemini não foi configurada. Por favor, adicione-a nas configurações do plugin.";
   }
@@ -10,6 +21,7 @@ export const getChatResponse = async (userMessage: string, context: string, apiK
 
     const chat: Chat = ai.chats.create({
       model: 'gemini-2.5-flash',
+      history: history,
     });
 
     // Se não houver contexto, podemos usar um prompt um pouco diferente
@@ -39,7 +51,7 @@ CONTEXTO: Nenhuma nota foi fornecida como contexto. Responda com base em seu con
 
   } catch (error) {
     console.error("Erro ao chamar a API do Gemini:", error);
-    if (error.message.includes('API key not valid')) {
+    if (error instanceof Error && error.message.includes('API key not valid')) {
         return "Desculpe, a chave da API do Gemini fornecida não é válida. Verifique-a nas configurações do plugin.";
     }
     return "Desculpe, ocorreu um erro ao tentar me comunicar com a IA. Verifique o console para mais detalhes.";
