@@ -58,3 +58,56 @@ export const getFileContent = async (app: ObsidianApp, filePath: string): Promis
   }
   return '';
 };
+
+/**
+ * Encontra os arquivos mais relevantes no cofre com base em uma consulta de pesquisa.
+ * @param app A instância do aplicativo Obsidian.
+ * @param query A string de pesquisa do usuário.
+ * @param topN O número de arquivos principais a serem retornados.
+ * @returns Uma promessa que resolve para uma matriz de arquivos com seu conteúdo.
+ */
+export const findRelevantFiles = async (
+  app: ObsidianApp,
+  query: string,
+  topN: number = 3
+): Promise<{ file: TFile; content: string }[]> => {
+  const allFiles = app.vault.getMarkdownFiles();
+  const queryWords = query.toLowerCase().split(/\s+/).filter(Boolean);
+
+  if (queryWords.length === 0) {
+    return [];
+  }
+
+  const fileScores = await Promise.all(
+    allFiles.map(async (file) => {
+      const content = await app.vault.cachedRead(file);
+      const lowerContent = content.toLowerCase();
+      let score = 0;
+
+      // Pontua com base na presença de palavras-chave
+      for (const word of queryWords) {
+        if (lowerContent.includes(word)) {
+          score++;
+        }
+      }
+      
+      // Bônus se a palavra-chave estiver no nome do arquivo
+      const lowerBasename = file.basename.toLowerCase();
+       for (const word of queryWords) {
+        if (lowerBasename.includes(word)) {
+          score += 2; 
+        }
+      }
+
+      return { file, content, score };
+    })
+  );
+
+  // Filtra arquivos com pontuação > 0 e ordena do maior para o menor
+  const sortedFiles = fileScores
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  // Retorna os top N arquivos
+  return sortedFiles.slice(0, topN).map(item => ({ file: item.file, content: item.content }));
+};

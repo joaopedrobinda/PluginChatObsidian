@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { getVaultFileTree } from '../services/vaultService';
 import { FileTreeNode, FolderNode, FileNode } from '../types';
@@ -40,7 +41,6 @@ const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange
 
   return (
     <div className="p-4 bg-gray-800/50 flex flex-col h-full text-gray-300">
-      <h3 className="font-bold text-lg mb-2">Notas para Contexto</h3>
       <p className="text-xs text-gray-400 mb-3">Selecionadas: {selectedPaths.size}</p>
       <input
         type="text"

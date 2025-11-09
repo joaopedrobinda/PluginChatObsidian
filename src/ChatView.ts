@@ -1,5 +1,5 @@
-// FIX: Usando a importação de namespace para 'obsidian' para resolver corretamente os tipos das classes base e suas propriedades.
-import * as obsidian from "obsidian";
+// FIX: Replaced namespace import with named imports to resolve base class types correctly.
+import { ItemView, WorkspaceLeaf } from "obsidian";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
 import ChatViewContent from "../components/ChatViewContent";
@@ -10,11 +10,11 @@ interface MyPluginSettings {
   apiKey: string;
 }
 
-export class ChatView extends obsidian.ItemView {
+export class ChatView extends ItemView {
   private root: Root | null = null;
   private settings: MyPluginSettings;
 
-  constructor(leaf: obsidian.WorkspaceLeaf, settings: MyPluginSettings) {
+  constructor(leaf: WorkspaceLeaf, settings: MyPluginSettings) {
     super(leaf);
     this.settings = settings;
   }

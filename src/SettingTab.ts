@@ -1,11 +1,11 @@
-// FIX: Usando a importação de namespace para 'obsidian' para resolver corretamente os tipos das classes base e suas propriedades.
-import * as obsidian from 'obsidian';
+// FIX: Replaced namespace import with named imports to resolve base class types correctly.
+import { App, PluginSettingTab, Setting } from 'obsidian';
 import MyRagChatPlugin from '../main';
 
-export class MyPluginSettingTab extends obsidian.PluginSettingTab {
+export class MyPluginSettingTab extends PluginSettingTab {
 	plugin: MyRagChatPlugin;
 
-	constructor(app: obsidian.App, plugin: MyRagChatPlugin) {
+	constructor(app: App, plugin: MyRagChatPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -17,7 +17,7 @@ export class MyPluginSettingTab extends obsidian.PluginSettingTab {
 
 		containerEl.createEl('h2', {text: 'Configurações do Chat RAG com Gemini'});
 
-		new obsidian.Setting(containerEl)
+		new Setting(containerEl)
 			.setName('Chave da API do Gemini')
 			.setDesc('Cole aqui sua chave da API do Google AI Studio. É necessário para que o chat funcione.')
 			.addText(text => text
