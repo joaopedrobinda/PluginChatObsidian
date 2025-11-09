@@ -2,11 +2,6 @@ import { App, Plugin, PluginManifest } from 'obsidian';
 import { ChatView, CHAT_VIEW_TYPE } from './src/ChatView';
 
 export default class MyRagChatPlugin extends Plugin {
-  // FIX: Adicionado construtor explícito para ajudar na inferência de tipos do TypeScript,
-  // o que pode resolver os erros de "propriedade não existe".
-  constructor(app: App, manifest: PluginManifest) {
-    super(app, manifest);
-  }
 
   async onload() {
     console.log('Carregando o plugin de Chat RAG...');

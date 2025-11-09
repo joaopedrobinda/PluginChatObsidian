@@ -1,0 +1,10 @@
+{
+  "id": "gemini-rag-chat",
+  "name": "Chat RAG com Gemini",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Um assistente de chat com IA (Gemini) que usa suas notas do Obsidian como contexto (RAG).",
+  "author": "Seu Nome (substitua)",
+  "authorUrl": "https://aistudio.google.com",
+  "isDesktopOnly": false
+}
