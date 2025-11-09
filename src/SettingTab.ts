@@ -1,11 +1,11 @@
-// FIX: Using named imports from 'obsidian' instead of a namespace import ('* as obsidian') to ensure TypeScript correctly resolves the types and base class properties.
-import { App, PluginSettingTab, Setting } from 'obsidian';
+// FIX: Usando a importação de namespace para 'obsidian' para resolver corretamente os tipos das classes base e suas propriedades.
+import * as obsidian from 'obsidian';
 import MyRagChatPlugin from '../main';
 
-export class MyPluginSettingTab extends PluginSettingTab {
+export class MyPluginSettingTab extends obsidian.PluginSettingTab {
 	plugin: MyRagChatPlugin;
 
-	constructor(app: App, plugin: MyRagChatPlugin) {
+	constructor(app: obsidian.App, plugin: MyRagChatPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -17,7 +17,7 @@ export class MyPluginSettingTab extends PluginSettingTab {
 
 		containerEl.createEl('h2', {text: 'Configurações do Chat RAG com Gemini'});
 
-		new Setting(containerEl)
+		new obsidian.Setting(containerEl)
 			.setName('Chave da API do Gemini')
 			.setDesc('Cole aqui sua chave da API do Google AI Studio. É necessário para que o chat funcione.')
 			.addText(text => text

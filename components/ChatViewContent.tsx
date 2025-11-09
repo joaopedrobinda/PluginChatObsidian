@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, MessageAuthor } from '../types';
 import { getChatResponse } from '../services/geminiService';
@@ -28,6 +29,12 @@ const ApiKeyMessage: React.FC = () => (
     </div>
 );
 
+const PanelRightIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>
+    </svg>
+);
+
 
 const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -36,6 +43,7 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
   const [userInput, setUserInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -75,26 +83,28 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
     }
   };
   
-  // Se não houver chave de API, mostra a mensagem de configuração.
   if (!settings.apiKey) {
       return <ApiKeyMessage />;
   }
 
   return (
-    <div className="flex h-full bg-gray-800 text-gray-200 font-sans">
+    <div className="flex h-full bg-gray-800 text-gray-200 font-sans overflow-hidden">
         {/* Painel de Chat (Esquerda) */}
         <div className="flex flex-col flex-grow h-full">
-            <header className="p-4 border-b border-gray-700">
+            <header className="p-4 border-b border-gray-700 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-purple-400">Assistente de Chat RAG</h2>
+                <button 
+                    onClick={() => setIsSidebarVisible(!isSidebarVisible)} 
+                    className="p-1 text-gray-400 hover:text-white transition-colors"
+                    title={isSidebarVisible ? "Ocultar Contexto" : "Mostrar Contexto"}
+                >
+                    <PanelRightIcon className={`transform transition-transform ${isSidebarVisible ? '' : 'rotate-180'}`}/>
+                </button>
             </header>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg, index) => (
-                <Message 
-                    key={index} 
-                    message={msg}
-                    // A função de inserir na nota não é aplicável aqui, pois a view não está atrelada a um editor específico
-                />
+                <Message key={index} message={msg} />
                 ))}
                 <div ref={messagesEndRef} />
             </div>
@@ -121,8 +131,10 @@ const ChatViewContent: React.FC<ChatViewContentProps> = ({ obsidianApp, settings
         </div>
 
         {/* Barra Lateral de Contexto (Direita) */}
-        <div className="w-1/3 max-w-sm border-l border-gray-700 flex flex-col">
-            <VaultFileSelector obsidianApp={obsidianApp} onSelectionChange={setSelectedFileIds} />
+        <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${isSidebarVisible ? 'w-1/3 max-w-sm' : 'w-0'}`}>
+            <div className={`h-full border-l border-gray-700 flex flex-col ${isSidebarVisible ? 'opacity-100' : 'opacity-0'}`}>
+                <VaultFileSelector obsidianApp={obsidianApp} onSelectionChange={setSelectedFileIds} />
+            </div>
         </div>
     </div>
   );

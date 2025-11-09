@@ -1,5 +1,5 @@
-// FIX: Using named imports from 'obsidian' instead of a namespace import ('* as obsidian') to ensure TypeScript correctly resolves the types and base class properties.
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+// FIX: Usando a importação de namespace para 'obsidian' para resolver corretamente os tipos das classes base e suas propriedades.
+import * as obsidian from 'obsidian';
 import { ChatView, RAG_CHAT_VIEW_TYPE } from './src/ChatView';
 import { MyPluginSettingTab } from './src/SettingTab';
 
@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
   apiKey: ''
 }
 
-export default class MyRagChatPlugin extends Plugin {
+export default class MyRagChatPlugin extends obsidian.Plugin {
   settings: MyPluginSettings;
 
   async onload() {
@@ -55,7 +55,7 @@ export default class MyRagChatPlugin extends Plugin {
   async activateView() {
     const { workspace } = this.app;
 
-    let leaf: WorkspaceLeaf | null = null;
+    let leaf: obsidian.WorkspaceLeaf | null = null;
     const leaves = workspace.getLeavesOfType(RAG_CHAT_VIEW_TYPE);
 
     if (leaves.length > 0) {

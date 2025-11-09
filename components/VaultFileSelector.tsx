@@ -1,62 +1,47 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { getVaultFiles } from '../services/vaultService';
-import { VaultFile } from '../types';
+import { getVaultFileTree } from '../services/vaultService';
+import { FileTreeNode, FolderNode, FileNode } from '../types';
 import type { App as ObsidianApp } from 'obsidian';
+import { FileTree } from './FileTree';
 
 interface VaultFileSelectorProps {
-  onSelectionChange: (selectedIds: string[]) => void;
+  onSelectionChange: (selectedPaths: string[]) => void;
   obsidianApp: ObsidianApp;
 }
 
 const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange, obsidianApp }) => {
-  const [files, setFiles] = useState<VaultFile[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [rootNode, setRootNode] = useState<FolderNode | null>(null);
+  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [filter, setFilter] = useState<string>('');
 
   useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const vaultFiles = await getVaultFiles(obsidianApp);
-        setFiles(vaultFiles);
-      } catch (error) {
-        console.error("Erro ao buscar arquivos do cofre:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchFiles();
+    try {
+      const tree = getVaultFileTree(obsidianApp);
+      setRootNode(tree);
+    } catch (error) {
+      console.error("Erro ao construir a árvore de arquivos do cofre:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [obsidianApp]);
-
-  const filteredFiles = useMemo(() => {
-    return files.filter(file => file.name.toLowerCase().includes(filter.toLowerCase()));
-  }, [files, filter]);
-
-  const handleToggleSelection = (fileId: string) => {
-    const newSelection = new Set(selectedIds);
-    if (newSelection.has(fileId)) {
-      newSelection.delete(fileId);
-    } else {
-      newSelection.add(fileId);
-    }
-    setSelectedIds(newSelection);
-    onSelectionChange(Array.from(newSelection));
-  };
   
-  const handleSelectAll = (isChecked: boolean) => {
-    const newSelection = new Set<string>();
-    if (isChecked) {
-      filteredFiles.forEach(file => newSelection.add(file.id));
+  const handleToggleSelection = (filePath: string) => {
+    const newSelection = new Set(selectedPaths);
+    if (newSelection.has(filePath)) {
+      newSelection.delete(filePath);
+    } else {
+      newSelection.add(filePath);
     }
-    setSelectedIds(newSelection);
+    setSelectedPaths(newSelection);
     onSelectionChange(Array.from(newSelection));
   };
-
-  const allFilteredSelected = filteredFiles.length > 0 && filteredFiles.every(file => selectedIds.has(file.id));
 
   return (
-    <div className="p-4 bg-gray-800/50 flex flex-col h-full">
-      <h3 className="font-bold text-lg mb-2 text-gray-300">Notas para Contexto</h3>
+    <div className="p-4 bg-gray-800/50 flex flex-col h-full text-gray-300">
+      <h3 className="font-bold text-lg mb-2">Notas para Contexto</h3>
+      <p className="text-xs text-gray-400 mb-3">Selecionadas: {selectedPaths.size}</p>
       <input
         type="text"
         placeholder="Filtrar notas..."
@@ -64,37 +49,19 @@ const VaultFileSelector: React.FC<VaultFileSelectorProps> = ({ onSelectionChange
         onChange={(e) => setFilter(e.target.value)}
         className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 mb-3 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
       />
-      <div className="flex items-center mb-3 border-b border-gray-700 pb-3">
-          <input
-            type="checkbox"
-            id="select-all"
-            className="form-checkbox h-4 w-4 bg-gray-600 border-gray-500 rounded text-purple-500 focus:ring-purple-500"
-            checked={allFilteredSelected}
-            onChange={(e) => handleSelectAll(e.target.checked)}
-            disabled={filteredFiles.length === 0}
-          />
-          <label htmlFor="select-all" className="ml-2 text-sm text-gray-400">
-            Selecionar todos os filtrados ({selectedIds.size}/{filteredFiles.length})
-          </label>
-      </div>
-
-      <div className="flex-1 overflow-y-auto text-gray-400 text-sm">
+      
+      <div className="flex-1 overflow-y-auto text-sm pr-2">
         {isLoading ? (
           <p>Carregando notas do cofre...</p>
+        ) : rootNode ? (
+          <FileTree 
+            node={rootNode}
+            filter={filter}
+            selectedPaths={selectedPaths}
+            onToggleSelection={handleToggleSelection}
+          />
         ) : (
-          <div className="space-y-1">
-            {filteredFiles.map(file => (
-              <label key={file.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  className="form-checkbox h-4 w-4 bg-gray-600 border-gray-500 rounded text-purple-500 focus:ring-purple-500"
-                  checked={selectedIds.has(file.id)}
-                  onChange={() => handleToggleSelection(file.id)}
-                />
-                <span className="truncate" title={file.path}>{file.name}</span>
-              </label>
-            ))}
-          </div>
+          <p>Nenhuma nota encontrada.</p>
         )}
       </div>
     </div>
