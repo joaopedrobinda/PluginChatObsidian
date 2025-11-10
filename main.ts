@@ -12,7 +12,8 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
   apiKey: ''
 }
 
-// Fix: Add 'extends Plugin' to inherit from the base Obsidian Plugin class.
+// Fix: The `MyRagChatPlugin` class must extend the base `Plugin` class to inherit
+// core Obsidian plugin functionality and properties like `app`, `addSettingTab`, etc.
 export default class MyRagChatPlugin extends Plugin {
   settings: MyPluginSettings;
 

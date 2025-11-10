@@ -9,7 +9,8 @@ interface MyPluginSettings {
   apiKey: string;
 }
 
-// Fix: Add 'extends ItemView' to inherit from the base Obsidian ItemView class.
+// Fix: The `ChatView` class must extend `ItemView` to function as a custom view in Obsidian.
+// This provides access to properties like `containerEl` and `app`.
 export class ChatView extends ItemView {
   private root: Root | null = null;
   private settings: MyPluginSettings;

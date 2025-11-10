@@ -8,10 +8,16 @@ const mockObsidianApp = {
     getMarkdownFiles: () => [
         { basename: 'Nota de Teste 1', path: 'teste1.md', stat: { mtime: Date.now() } },
         { basename: 'Outra Nota Legal', path: 'outra.md', stat: { mtime: Date.now() - 86400000 } },
-        { basename: 'Receita de Bolo', path: 'receitas/bolo.md', stat: { mtime: Date.now() - 604800000 * 2 } }
+        { basename: 'Receita de Bolo', path: 'receitas/bolo.md', stat: { mtime: Date.now() - 604800000 * 2 } },
+        { basename: 'Root File', path: 'rootfile.md', stat: { mtime: Date.now() } }
     ],
-    cachedRead: (file: any) => Promise.resolve(`# Conteúdo de ${file.basename}`),
+    cachedRead: (file: any) => Promise.resolve(`# Conteúdo de ${file.basename}\n\nEste é um texto de exemplo para a nota.`),
     getAbstractFileByPath: (path: string) => (mockObsidianApp.vault.getMarkdownFiles() as any[]).find(f => f.path === path) || null,
+    getRoot: () => ({
+      path: '/',
+      name: 'root',
+      children: (mockObsidianApp.vault.getMarkdownFiles() as any[]).map(f => ({...f, parent: { path: '/' }})), // Simple mock
+    }),
   },
 } as unknown as ObsidianApp;
 
@@ -23,12 +29,10 @@ const mockSettings = {
 
 const App: React.FC = () => {
   return (
-    <div className="app-container" style={{ height: '100vh' }}>
-      <ChatViewContent
-        obsidianApp={mockObsidianApp}
-        settings={mockSettings}
-      />
-    </div>
+    <ChatViewContent
+      obsidianApp={mockObsidianApp}
+      settings={mockSettings}
+    />
   );
 };
 
